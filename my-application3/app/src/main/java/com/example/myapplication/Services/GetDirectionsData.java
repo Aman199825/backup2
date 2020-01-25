@@ -18,6 +18,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.maps.android.PolyUtil;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.nio.DoubleBuffer;
 import java.util.ArrayList;
@@ -55,8 +57,8 @@ public class GetDirectionsData extends AsyncTask<Object,String,String> {
 
     @Override
     protected void onPostExecute(String s) {
-
-        String[] directionsList;
+         @NotNull
+         String[] directionsList;
         DataParser parser = new DataParser();
        directionsList = parser.parseDirections(s);
         FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -68,52 +70,26 @@ public class GetDirectionsData extends AsyncTask<Object,String,String> {
          }
          DatabaseReference myRef=database.getReference("location");
          myRef.setValue(arr);
-        /*for(int i=0;i<directionsList.length;i++) {
-            //myRef.setValue(directionsList[i]);
-            myRef[i] = database.getReference("location");
-            myRef[i].setValue(directionsList[i]);
-        }
-       // List<String> arr=new ArrayList<>();
-        for(int i=0;i<directionsList.length;i++)
-        {
-           // arr.add(directionsList[i].toString());
-            Log.i("directions",directionsList[i]);
-        }
 
-       /* myRef.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                // This method is called once with the initial value and again
-                // whenever data at this location is updated.
-                String value = dataSnapshot.getValue(String.class);
-                Log.d(TAG, "Value is: " + value);
-            }
-
-            @Override
-            public void onCancelled(DatabaseError error) {
-                // Failed to read value
-                Log.w(TAG, "Failed to read value.", error.toException());
-            }
-        });*/
         displayDirection(directionsList);
 
-           // Arrays.stream(directionsList).forEach(i-> Log.i("tag2",i));
+
 
     }
 
-    public void displayDirection(String[] directionsList)
+    public void displayDirection(@NotNull String[] directionsList)
     {
+      if(directionsList!=null) {
+          int count = directionsList.length;
+          for (int i = 0; i < count; i++) {
+              PolylineOptions options = new PolylineOptions();
+              options.color(Color.BLUE);
+              options.width(20);
+              options.addAll(PolyUtil.decode(directionsList[i]));
 
-        int count = directionsList.length;
-        for(int i = 0;i<count;i++)
-        {
-            PolylineOptions options = new PolylineOptions();
-            options.color(Color.RED);
-            options.width(10);
-            options.addAll(PolyUtil.decode(directionsList[i]));
-
-            mMap.addPolyline(options);
-        }
+              mMap.addPolyline(options);
+          }
+      }
     }
 
 

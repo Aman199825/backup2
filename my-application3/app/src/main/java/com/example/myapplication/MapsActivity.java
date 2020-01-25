@@ -2,7 +2,9 @@ package com.example.myapplication;
 
 import com.example.myapplication.Services.*;
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -10,6 +12,7 @@ import android.os.Build;
 
 import android.os.Bundle;
 
+import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -38,14 +41,18 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static android.graphics.Bitmap.*;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
@@ -63,11 +70,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LocationRequest mLocationRequest;
     int PROXIMITY_RADIUS = 10000;
     double latitude, longitude;
-   // double end_latitude, end_longitude;
-
-
+   double end_latitude, end_longitude;
+    static double count=0;
+    String spokenText="";
+    //FirebaseDatabase database=FirebaseDatabase.getInstance();
+    //DatabaseReference myref=database.getReference();
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
 
@@ -88,6 +98,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
 
 
     }
@@ -142,12 +153,49 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
        arr.add(new CustomLocation(26.7853325,75.8223634));
        arr.add(new CustomLocation(26.8036951,75.80850399999997));
        arr.add(new CustomLocation(26.8107868,75.80316770000002));
+       arr.add(new CustomLocation(26.79664, 75.81378));
+       arr.add(new CustomLocation(26.80369, 75.8085));
+       arr.add(new CustomLocation(26.81078, 75.80316));
+       arr.add(new CustomLocation(26.83897, 75.79383));
+       arr.add(new CustomLocation(26.84083, 75.79369));
+       arr.add(new CustomLocation(26.85077, 75.79418));
+       arr.add(new CustomLocation(26.85678, 75.79518));
+       arr.add(new CustomLocation(26.86564, 75.79639));
+       arr.add(new CustomLocation(26.8398, 75.77708));
+       arr.add(new CustomLocation(26.8405, 75.77028));
+       arr.add(new CustomLocation(26.83948, 75.76772));
+       arr.add(new CustomLocation(26.86244, 75.79599));
+       arr.add(new CustomLocation(26.86288, 75.79278));
+       arr.add(new CustomLocation(26.86864, 75.78389));
+       arr.add(new CustomLocation(26.87113, 75.78064));
+       arr.add(new CustomLocation(26.87366, 75.77656));
+       arr.add(new CustomLocation(26.87746, 75.77265));
+       arr.add(new CustomLocation(26.88068, 75.76682));
+       arr.add(new CustomLocation(26.87276, 75.79796));
+       arr.add(new CustomLocation(26.87242, 75.79735));
+       arr.add(new CustomLocation(26.88076, 75.79947));
+       arr.add(new CustomLocation(26.88666, 75.80247));
+       arr.add(new CustomLocation(26.89169, 75.80609));
+       arr.add(new CustomLocation(26.89483, 75.80871));
+       arr.add(new CustomLocation(26.89705, 75.81047));
+       arr.add(new CustomLocation(26.89953, 75.81252));
+       arr.add(new CustomLocation(26.90386, 75.8144));
+
+
+
        //arr.stream().forEach(i->setCustomMarker(i));
+       //arr.addAll(new []CustomLocation{(26.78533, 75.82236)
+
        for(CustomLocation cus:arr)
        {
            //setCustomMarker(new LatLng(cus.getLat(),cus.getLongitude()));
            LatLng trafficLocation = new LatLng(cus.lat, cus.longitude);
-           mMap.addMarker(new MarkerOptions().draggable(false).position(trafficLocation).title("u1").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+           //mMap.addMarker(new MarkerOptions().draggable(false).position(trafficLocation).title("u1").icon(BitmapDescriptorFactory.fromResource(R.drawable.t)));
+
+          //mMap.addMarker(new MarkerOptions().draggable(false).position(trafficLocation).title("u1").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+
+           mMap.addMarker(new MarkerOptions().draggable(false).position(trafficLocation).title("u1").icon(BitmapDescriptorFactory.fromAsset("c.png")));
+
        }
    }
 
@@ -160,6 +208,86 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mGoogleApiClient.connect();
     }
 
+    public void onClick3(View v)
+    {
+        EditText tf_location = (EditText) findViewById(R.id.TF_location);
+        String location = tf_location.getText().toString();
+        List<Address> addressList = null;
+        MarkerOptions markerOptions = new MarkerOptions();
+        Log.d("location = ", location);
+
+        if (!location.equals("")) {
+            Geocoder geocoder = new Geocoder(this);
+            try {
+                addressList = geocoder.getFromLocationName(location, 5);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            if (addressList != null) {
+                for (int i = 0; i < addressList.size(); i++) {
+                    Address myAddress = addressList.get(i);
+                    LatLng latLng = new LatLng(myAddress.getLatitude(), myAddress.getLongitude());
+                    double end_latitude2=latLng.latitude;
+                    double end_longitude2=latLng.longitude;
+                    end_latitude=latLng.latitude;
+                    end_longitude=latLng.longitude;
+                    FirebaseDatabase database = FirebaseDatabase.getInstance();
+                    DatabaseReference myRef=database.getReference("cordinates");
+                    List<Double> arr=new ArrayList<>();
+                    arr.add(latitude);
+                    arr.add(longitude);
+                    arr.add(end_latitude2);
+                    arr.add(end_longitude2);
+                    myRef.setValue(arr);
+                    markerOptions.position(latLng);
+                    mMap.addMarker(markerOptions);
+                    mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+                }
+            }
+
+        }
+    }
+    public void onClick4()
+    {
+        List<Address> addressList = null;
+        MarkerOptions markerOptions = new MarkerOptions();
+        Log.d("location = ", spokenText);
+
+        if (!spokenText.equals("")) {
+            Geocoder geocoder = new Geocoder(this);
+            try {
+                addressList = geocoder.getFromLocationName(spokenText, 5);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            if (addressList != null) {
+                for (int i = 0; i < addressList.size(); i++) {
+                    Address myAddress = addressList.get(i);
+                    LatLng latLng = new LatLng(myAddress.getLatitude(), myAddress.getLongitude());
+                    double end_latitude2=latLng.latitude;
+                    double end_longitude2=latLng.longitude;
+                    end_latitude=latLng.latitude;
+                    end_longitude=latLng.longitude;
+                    FirebaseDatabase database = FirebaseDatabase.getInstance();
+                    DatabaseReference myRef=database.getReference("cordinates");
+                    List<Double> arr=new ArrayList<>();
+                    arr.add(latitude);
+                    arr.add(longitude);
+                    arr.add(end_latitude2);
+                    arr.add(end_longitude2);
+                    myRef.setValue(arr);
+                    markerOptions.position(latLng);
+                    mMap.addMarker(markerOptions);
+                    mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+                }
+            }
+
+        }
+    }
     public void onClick(View v)
     {
         Object dataTransfer[] = new Object[3];
@@ -167,36 +295,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         switch(v.getId()) {
-            case R.id.B_search: {
-                EditText tf_location = (EditText) findViewById(R.id.TF_location);
-                String location = tf_location.getText().toString();
-                List<Address> addressList = null;
-                MarkerOptions markerOptions = new MarkerOptions();
-                Log.d("location = ", location);
 
-                if (!location.equals("")) {
-                    Geocoder geocoder = new Geocoder(this);
-                    try {
-                        addressList = geocoder.getFromLocationName(location, 5);
-
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    if (addressList != null) {
-                        for (int i = 0; i < addressList.size(); i++) {
-                            Address myAddress = addressList.get(i);
-                            LatLng latLng = new LatLng(myAddress.getLatitude(), myAddress.getLongitude());
-                            request(latLng.latitude,latLng.longitude);
-                            markerOptions.position(latLng);
-                            mMap.addMarker(markerOptions);
-                            mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
-                        }
-                    }
-
-                }
-            }
-            break;
             case R.id.hospitals:
                 //mMap.clear();
                 String hospital = "hospital";
@@ -207,16 +306,52 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                 getNearbyPlacesData.execute(dataTransfer);
                 Toast.makeText(MapsActivity.this, "Showing Nearby Hospitals", Toast.LENGTH_LONG).show();
+
+                break;
+            case R.id.B_to:
+                  request();
+                addtrafficlights();
+                // Get a reference to our posts
+                final FirebaseDatabase database = FirebaseDatabase.getInstance();
+                DatabaseReference ref = database.getReference("count");
+
+// Attach a listener to read the data at our posts reference
+                ref.addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        //Post post = dataSnapshot.getValue(Post.class);
+                        //System.out.println(post);
+                        if(dataSnapshot.exists() && dataSnapshot.getValue()!= null){
+                             count= ((Long) dataSnapshot.getValue()).intValue();
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+                        System.out.println("The read failed: " + databaseError.getCode());
+                    }
+                });
+                count+=1;
+                ref.setValue(count);
                 break;
 
 
-
-
-
-
-            case R.id.button2:
+            /*case R.id.button2:
                 mMap.clear();
                onMapReady(mMap);
+                String hospital2 = "hospital";
+                String url2 = getUrl(latitude, longitude, hospital2);
+
+                dataTransfer[0] = mMap;
+                dataTransfer[1] = url2;
+
+                getNearbyPlacesData.execute(dataTransfer);
+
+               break;*/
+            case R.id.button3:
+                mMap.clear();
+                onMapReady(mMap);
+                break;
 
 
                                                                         }
@@ -279,6 +414,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+        //LatLng latLng2=latLng;
+        final FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference ref = database.getReference("currentlocation");
+
+// Attach a listener to read the data at our posts reference
+        ref.setValue(latLng);
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(latLng);
         markerOptions.draggable(true);
@@ -392,13 +533,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMarkerDragEnd(Marker marker) {
-        double end_latitude = marker.getPosition().latitude;
-        double end_longitude =  marker.getPosition().longitude;
+         end_latitude = marker.getPosition().latitude;
+         end_longitude =  marker.getPosition().longitude;
 
         Log.i("end_lat",""+end_latitude);
         Log.i("end_lng",""+end_longitude);
-        request(end_latitude,end_longitude);
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        //request();
+        /*FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef=database.getReference("cordinates");
+        List<Double> arr=new ArrayList<>();
+        arr.add(latitude);
+        arr.add(longitude);
+        arr.add(end_latitude);
+        arr.add(end_longitude);
+        myRef.setValue(arr);*/
+    }
+
+    /*public void onClick2(View view)
+    {
+        addtrafficlights();
+    }*/
+    public void request()
+    {
+        StringBuilder googleDirectionsUrl = new StringBuilder("https://maps.googleapis.com/maps/api/directions/json?");
+        googleDirectionsUrl.append("origin="+latitude+","+longitude);
+        googleDirectionsUrl.append("&destination="+end_latitude+","+end_longitude);
+        googleDirectionsUrl.append("&key="+"AIzaSyAxxUpRPzUNb16HdMLxsk4pfnCBO74WkWU");
+        Log.i("service used",googleDirectionsUrl.toString());
+         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef=database.getReference("cordinates");
         List<Double> arr=new ArrayList<>();
         arr.add(latitude);
@@ -406,28 +568,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         arr.add(end_latitude);
         arr.add(end_longitude);
         myRef.setValue(arr);
+        polylineDrawer(googleDirectionsUrl);
     }
-
-    public void onClick2(View view)
-    {
-        addtrafficlights();
-    }
-    public void request(double end_latitude,double end_longitude)
-    {
-        StringBuilder googleDirectionsUrl = new StringBuilder("https://maps.googleapis.com/maps/api/directions/json?");
-        googleDirectionsUrl.append("origin="+latitude+","+longitude);
-        googleDirectionsUrl.append("&destination="+end_latitude+","+end_longitude);
-        googleDirectionsUrl.append("&key="+"AIzaSyAxxUpRPzUNb16HdMLxsk4pfnCBO74WkWU");
-        Log.i("service used",googleDirectionsUrl.toString());
-       polylineDrawer(end_latitude,end_longitude,googleDirectionsUrl);
-    }
-    public void polylineDrawer(double end_latitude,double end_longitude,StringBuilder googleDirectionsUrl)
+    public void polylineDrawer(StringBuilder googleDirectionsUrl)
     {
 
         String url=getDirectionsUrl(googleDirectionsUrl);
 
-        //String [] str=new DataParser().parseDirections(url2);
-        //Log.i("tag",str[0]);
         Object [] dataTransfer=new Object[3];
         GetDirectionsData getDirectionsData = new GetDirectionsData();
         dataTransfer[0] = mMap;
@@ -435,15 +582,31 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         dataTransfer[2] = new LatLng(end_latitude, end_longitude);
         getDirectionsData.execute(dataTransfer);
     }
-    /*public void polylineDrawer(double latitude,double longitude,double end_latitude,double end_longitude)
-    {
-        PolylineOptions polylineOptions=new PolylineOptions();
-        polylineOptions.add(new LatLng(latitude,longitude));
-        polylineOptions.add(new LatLng(end_latitude,end_longitude));
-        polylineOptions.width((float) 20.0);
-        polylineOptions.color(20);
-        mMap.addPolyline(polylineOptions);
-    }*/
+    private static final int SPEECH_REQUEST_CODE = 0;
+
+    // Create an intent that can start the Speech Recognizer activity
+    private void displaySpeechRecognizer() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+// Start the activity, the intent will be populated with the speech text
+        startActivityForResult(intent, SPEECH_REQUEST_CODE);
+    }
+
+    // This callback is invoked when the Speech Recognizer returns.
+// This is where you process the intent and extract the speech text from the intent.
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode,
+                                    Intent data) {
+        if (requestCode == SPEECH_REQUEST_CODE && resultCode == RESULT_OK) {
+            List<String> results = data.getStringArrayListExtra(
+                    RecognizerIntent.EXTRA_RESULTS);
+             spokenText = results.get(0);
+             onClick4();
+            // Do something with spokenText
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
 }
 
 

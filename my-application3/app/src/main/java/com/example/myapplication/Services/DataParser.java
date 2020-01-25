@@ -133,15 +133,20 @@ public class DataParser {
         JSONArray jsonArray = null;
         JSONObject jsonObject;
 
+
         try {
             jsonObject = new JSONObject(jsonData);
-            jsonArray = jsonObject.getJSONArray("routes").getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps");
-            //int i = Log.i(jsonArray.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps").toString());
-            int count=jsonArray.length();
-            Log.i("data",jsonArray.toString());
-            FirebaseDatabase database=FirebaseDatabase.getInstance();
-            DatabaseReference myRef=database.getReference("location2");
-            myRef.setValue(jsonArray.toString());
+            if(jsonObject!=null) {
+
+
+                jsonArray = jsonObject.getJSONArray("routes").getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps");
+                //int i = Log.i(jsonArray.getJSONObject(0).getJSONArray("legs").getJSONObject(0).getJSONArray("steps").toString());
+                int count = jsonArray.length();
+                Log.i("data", jsonArray.toString());
+                FirebaseDatabase database = FirebaseDatabase.getInstance();
+                DatabaseReference myRef = database.getReference("location2");
+                myRef.setValue(jsonArray.toString());
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }
